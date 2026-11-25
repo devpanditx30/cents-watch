@@ -39,17 +39,27 @@ def notify(title, msg):
     urllib.request.urlopen(req, timeout=30)
 
 
+MAX_ALERTS = 10
+
+
+def key(line):
+    return " | ".join(c for c in line.split(" | ") if not c.strip().isdigit())
+
+
 def main():
-    seen = set(json.load(open(STATE_FILE))) if os.path.exists(STATE_FILE) else set()
+    raw = json.load(open(STATE_FILE)) if os.path.exists(STATE_FILE) else {}
+    counts = {key(x): MAX_ALERTS for x in raw} if isinstance(raw, list) else raw
     lines = [l for l in rows(fetch()) if "CENT" in l.upper()]
     if FILTER:
         lines = [l for l in lines if any(f.lower() in l.lower() for f in FILTER)]
-    fresh = [l for l in lines if is_open(l) and l not in seen]
-    print(f"{len(lines)} rows, {len(fresh)} new open")
-    if fresh:
-        notify("CEnT-S slot open!", "\n".join(fresh[:5]))
-        seen.update(fresh)
-        json.dump(sorted(seen), open(STATE_FILE, "w"))
+    open_now = {key(l): l for l in lines if is_open(l)}
+    due = {k: l for k, l in open_now.items() if counts.get(k, 0) < MAX_ALERTS}
+    print(f"{len(lines)} rows, {len(due)} to alert")
+    for k, l in due.items():
+        n = counts.get(k, 0) + 1
+        notify(f"CEnT-S slot open! ({n}/{MAX_ALERTS})", l)
+    new_counts = {k: counts.get(k, 0) + (1 if k in due else 0) for k in open_now}
+    json.dump(new_counts, open(STATE_FILE, "w"))
 
 
 if __name__ == "__main__":
