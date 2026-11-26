@@ -27,4 +27,5 @@ jobs:
         if: failure()
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-        run: curl -H "Priority: urgent" -d "CEnT-S watcher FAILED - check GitHub Actions" ntfy.sh/$NTFY_TOPIC
+        run: |
+          curl -H "Priority: urgent" -d "CEnT-S watcher FAILED - check GitHub Actions" "ntfy.sh/$NTFY_TOPIC"
