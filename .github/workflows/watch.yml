@@ -23,6 +23,10 @@ jobs:
           git config user.email "watcher-bot@users.noreply.github.com"
           git add cents_state.json 2>/dev/null || true
           git diff --cached --quiet || (git commit -m "update state" && git pull --rebase -X theirs origin main && git push)
+      - name: Ping monitor
+        env:
+          HC_PING_URL: ${{ secrets.HC_PING_URL }}
+        run: curl -fsS --retry 3 "$HC_PING_URL"
       - name: Alert on failure
         if: failure()
         env:
